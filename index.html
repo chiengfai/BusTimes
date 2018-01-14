@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Arrival Times</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="apple-touch-icon" href="bus.png">
+	<link rel="stylesheet" href="css/bootstrap.min.css">        
+	<script src="js/jquery-3.2.1.min.js"></script>
+	<script src="js/bootstrap.bundle.min.js"></script>
+	<script>
+	
+		var stops = [];
+		stops.push({area:"Boon Tiong", busstops:[	
+													{no:'06071',desc:'Boon Tiong Blk 2B'},
+													{no:'10141',desc:'Tiong Bahru Blk 18'},
+													{no:'10149', desc:'Tiong Bahru Blk 1'},
+													{no:'06069', desc:'Aft Furama'}
+											  ]});
+											  
+		stops.push({area:"Safra", busstops:[	
+													{no:'14279',desc:'Safra Blk 25'},
+													{no:'14241',desc:'CMPB'}
+											  ]});
+		stops.push({area:"Orchard MRT", busstops:[	
+													{no:'09022', desc:'Orchard Ion'},
+													{no:'13121', desc:'GWC->Orchard'},
+													{no:'13119', desc:'GWC->Tiong Bahru'},
+													{no:'13159', desc:'Leonie Bef Cosmo'},
+													{no:'13191', desc:'Paterson Lodge'}
+											  ]});
+		stops.push({area:"NYP", busstops:[	
+													{no:'54359', desc:'NYP Blk 502'},
+													{no:'54351', desc:'NYP->Hougang'},
+													{no:'66381', desc:'Nex Blk 334->NYP'},
+													{no:'54391', desc:'Jubilee'}
+											  ]});
+
+		var utc = new Date();											  
+
+
+											  
+		function format2digit(x)
+		{
+			return (x < 10 ? '0'+x : x);
+		}
+		
+		function formatMinSec(x)
+		{	var xx = Math.floor(x);
+			return format2digit(Math.floor(xx / 60)) + " m " + format2digit(xx % 60) + " s";
+		}
+		
+		function formatTime(x)
+		{
+			return format2digit(x.getHours()) + ':' + format2digit(x.getMinutes()) + ':' + format2digit(x.getSeconds());
+		}
+		
+		function padLeftSpace(n,input)
+		{
+			var results = "";
+			for (var i=0;i<n;i++) results+=" ";
+			results += input;
+			return results.slice(-n);
+		}
+
+		function refreshArrivalTimes(busStopNo) {
+			$("#arrivalBody").empty();			
+			$.ajax({
+	        	url: "http://ubuntu1.ryanguru.net/bustimes/websvc.php?busstop="+busStopNo,
+				type: "GET",
+			       success : function(data) {
+				    //console.log(busStopNo);
+					//console.log(data);
+			        var results = (JSON.parse(data)).Services;
+					console.log(results);
+			        results.sort(function(a,b) {
+						var aa = padLeftSpace(3,a.ServiceNo.replace(/([a-z])/gi, ""));
+						var bb = padLeftSpace(3,b.ServiceNo.replace(/([a-z])/gi, ""));
+				        if (aa < bb) return -1;
+				        else if (aa > bb)  return 1;
+				        else return 0;
+			        });
+					results.forEach(function(bus){
+						//console.log(bus.NextBus.EstimatedArrival);
+						var nextBusArrTime=null, subBusArrTime=null;
+						if (bus.NextBus.EstimatedArrival)
+							nextBusArrTime = new Date(bus.NextBus.EstimatedArrival);
+							if (bus.NextBus2.EstimatedArrival)
+								subBusArrTime = new Date(bus.NextBus2.EstimatedArrival);
+						var arr1 = Math.abs(nextBusArrTime-utc)/1000;
+						var color1class;
+						if (arr1 <= 4*60)
+							color1class = "badge-success";
+						else if (arr1 <= 7*60)
+							color1class = "badge-warning";
+						else
+							color1class = "badge-danger";
+
+						var arr2 = Math.abs(subBusArrTime-utc)/1000;							
+						var color2class;
+						if (arr2 <= 4*60)
+							color2class = "badge-success";
+						else if (arr2 <= 7*60)
+							color2class = "badge-warning";
+						else
+							color2class = "badge-danger";							
+						
+						/*
+						document.getElementById("arrival").innerHTML += 
+									"<tr>" +
+									'<td style="width25%" class="'+color1class+'">'+bus.ServiceNo+"</td>" +
+									'<td class="'+color1class+'">' + (nextBusArrTime ? formatMinSec(Math.abs(nextBusArrTime-utc)/1000) : '-')+"</td>" + 
+									'<td class="secondBus">'+(subBusArrTime ?  formatMinSec(Math.abs(subBusArrTime-utc)/1000)  : '-')+"</td>" +
+									"</tr>";
+						*/
+						$("#arrivalBody").append(
+							'<div class="row">' +
+								'<div class="col-3"><h4>'+bus.ServiceNo+'</h4></div>' +
+							  	'<div class="col-5"><h4><span class="badge '+ color1class+'">'+(nextBusArrTime ? formatMinSec(Math.abs(nextBusArrTime-utc)/1000) : "-")+'</span></h4></div>' +
+							  	'<div class="col-4"><h4><span class="badge pull-right '+ color2class +'">'+(subBusArrTime ?  formatMinSec(Math.abs(subBusArrTime-utc)/1000)  : "-")+'</span></h4></div>' +
+							'</div>'
+						);
+					});
+					//$('#end')[0].scrollIntoView();
+			    }
+			});			
+		}
+											  
+		function openModal(busStopNo, busStopDesc) {	
+			refreshArrivalTimes(busStopNo);
+			$('#modalTitle').html(busStopDesc);
+			$('#refreshBTN').attr('onclick', 'refreshArrivalTimes(\''+busStopNo+'\');');					
+			$('#displayArrivalTimes').modal();
+		}
+												  
+	</script>											  		
+</head>
+<body>
+ 
+	<div class="container">
+		<div id="accordion" role="tablist">
+		</div>
+	</div>
+
+	<div class="modal fade" id="displayArrivalTimes">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+			<h4 class="modal-title" id="modalTitle"></h4>	
+	        <button type="button" id="refreshBTN">Refresh</button>
+	      </div>
+	      <div class="modal-body" id="arrivalBody">
+		      <div class="d-flex justify-content-between">
+			  	<div>5</div>
+			  	<span class="badge badge-primary">Primary</span>
+			  	<span class="badge badge-primary">Primary</span>
+	      	  </div>			  				  	
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+</body>
+<script>
+	stops.forEach( function(dest) {
+		var headerID = dest.area.replace(/ /g,'');
+		console.log(headerID);
+		$('#accordion').append(
+			'<div class="card">' +
+			    '<div class="card-header" role="tab" id="'+headerID+'Heading">' +
+			      	'<h5 class="mb-0">' +
+			        	'<a data-toggle="collapse" href="#'+headerID+'" role="button" aria-expanded="true" aria-controls="'+headerID+'">' +
+					          dest.area +
+						'</a>' +
+					'</h5>' +
+			    '</div>' +
+				'<div id="'+headerID+'" class="collapse" role="tabpanel" aria-labelledby="'+headerID+'Heading" data-parent="#accordion">' +
+			    	'<div class="card-body" id="'+headerID+'Body">' +
+					'</div>' +
+			    '</div>' +
+			'</div>'
+		);
+		
+		dest.busstops.forEach( function(busstop){
+			$('#'+headerID+'Body').append(
+				'<a href="#" onclick="openModal(\''+busstop.no+'\',\''+busstop.desc+'\')">'+busstop.desc+'</p>'
+			);
+		});
+	});
+
+</script>
+</html>
