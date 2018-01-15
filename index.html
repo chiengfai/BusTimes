@@ -35,10 +35,6 @@
 													{no:'66381', desc:'Nex Blk 334->NYP'},
 													{no:'54391', desc:'Jubilee'}
 											  ]});
-
-		var utc = Date.now();											  
-
-
 											  
 		function format2digit(x)
 		{
@@ -80,6 +76,7 @@
 				        else if (aa > bb)  return 1;
 				        else return 0;
 			        });
+					var utc = Date.now();
 					results.forEach(function(bus){
 						//console.log(bus.NextBus.EstimatedArrival);
 						var nextBusArrTime=null, subBusArrTime=null;
@@ -116,8 +113,8 @@
 						$("#arrivalBody").append(
 							'<div class="row">' +
 								'<div class="col-3"><h4>'+bus.ServiceNo+'</h4></div>' +
-							  	'<div class="col-5"><h4><span class="badge '+ color1class+'">'+(nextBusArrTime ? formatMinSec(Math.abs(nextBusArrTime-utc)/1000) : "-")+'</span></h4></div>' +
-							  	'<div class="col-4"><h4><span class="badge pull-right '+ color2class +'">'+(subBusArrTime ?  formatMinSec(Math.abs(subBusArrTime-utc)/1000)  : "-")+'</span></h4></div>' +
+							  	'<div class="col-5"><h4><span class="badge '+ color1class+'">'+(nextBusArrTime ? formatMinSec(arr1) : "-")+'</span></h4></div>' +
+							  	'<div class="col-4"><h4><span class="badge pull-right '+ color2class +'">'+(subBusArrTime ?  formatMinSec(arr2)  : "-")+'</span></h4></div>' +
 							'</div>'
 						);
 					});
